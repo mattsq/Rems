@@ -13,7 +13,7 @@ connect(usr, pwd, proxies = NULL, server = "prod", server_url = NULL)
 
 \item{proxies}{List containing the system proxy information. The list contains attributes "url", "port", "usr", "pwd"}
 
-\item{server}{String, temporary parameter that let you choose an API server. Currently "old" (2-node), "new" (3-node now but eventually grow to 24 nodes)}
+\item{server}{String, parameter that lets you choose an API server. See common.R for options.}
 }
 \value{
 a Connection object.
@@ -21,4 +21,3 @@ a Connection object.
 \description{
 Connect to EMS and get the Auth token
 }
-

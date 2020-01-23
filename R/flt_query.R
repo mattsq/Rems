@@ -7,6 +7,15 @@ sp_ops <- list(
   ' not in '= 'notIn'
 )
 
+#' Create Flight Query
+#'
+#' Create a flight query object
+#'
+#' This function creates a flight query object that can be used to retrieve data.
+#' @param conn a connection object
+#' @param ems_name a string indicating the EMS server being used
+#' @param data_file a SQLite db file to be created to store the field and db trees.
+#' @return this function returns a connection object as a list
 #' @export
 flt_query <-
   function(conn, ems_name, data_file=NULL)
