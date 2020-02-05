@@ -134,7 +134,7 @@ run.TsQuery <-
                  uri_keys = c("analytic", "query"),
                  uri_args = c(qry$ems_id, flight),
                  jsondata = qry$queryset)
-    res <- content(r)
+    res <- httr::content(r)
     if ( !is.null(res$message) ) {
       stop(sprintf('API query for flight = %s was unsuccessful.\nHere is the massage from API: %s',
                    flight, res$message))
