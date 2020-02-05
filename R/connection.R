@@ -74,7 +74,7 @@ request <-
 
     # use proxy
     if (!is.null(conn$proxies)) {
-      prxy <- use_proxy(conn$proxies$url,
+      prxy <- httr::use_proxy(conn$proxies$url,
                         port      = conn$proxies$port,
                         username  = conn$proxies$usr,
                         password  = conn$proxies$pwd)
@@ -107,37 +107,37 @@ request <-
 
     if (rtype=="GET") {
       tryCatch({
-        r <- GET(uri, prxy, query = body, add_headers(.headers = headers), encode = encoding)
+        r <- httr::GET(uri, prxy, query = body, add_headers(.headers = headers), encode = encoding)
       }, error = function(err) {
         print(err)
         cat(sprintf("Http status code %s: %s", status_code(r), content(r)))
         cat("Trying to Reconnect EMS...")
         conn = reconnect(conn)
-        r <- GET(uri, prxy, query = body, add_headers(.headers = headers), encode = encoding)
+        r <- httr::GET(uri, prxy, query = body, add_headers(.headers = headers), encode = encoding)
       }
 
       )
 
     } else if (rtype=="POST") {
       tryCatch({
-        r <- POST(uri, prxy, body = body, add_headers(.headers = headers), encode = encoding)
+        r <- httr::POST(uri, prxy, body = body, add_headers(.headers = headers), encode = encoding)
       }, error = function(err) {
         print(err)
         cat(sprintf("Http status code %s: %s", status_code(r), content(r)))
         cat("Trying to Reconnect EMS...\n")
         conn = reconnect(conn)
-        r <- POST(uri, prxy, body = body, add_headers(.headers = headers), encode = encoding)
+        r <- httr::POST(uri, prxy, body = body, add_headers(.headers = headers), encode = encoding)
       })
 
     } else if (rtype=="DELETE") {
       tryCatch({
-        r <- DELETE(uri, prxy, body = body, add_headers(.headers = headers), encode = encoding)
+        r <- httr::DELETE(uri, prxy, body = body, add_headers(.headers = headers), encode = encoding)
       }, error = function(err) {
         print(err)
         cat(sprintf("Http status code %s: %s", status_code(r), content(r)))
         cat("Trying to Reconnect EMS...\n")
         conn = reconnect(conn)
-        r <- DELETE(uri, prxy, body = body, add_headers(.headers = headers), encode = encoding)
+        r <- httr::DELETE(uri, prxy, body = body, add_headers(.headers = headers), encode = encoding)
       })
     } else {
       stop(sprintf("%s: Unsupported request type.", rtype))

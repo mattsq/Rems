@@ -36,6 +36,12 @@ flt_query <-
     return(obj)
   }
 
+#' Set database
+#'
+#' Set the database for the flight query object.
+#'
+#' This
+#'
 #' @export
 set_database.FltQuery <-
   function(qry, name)
