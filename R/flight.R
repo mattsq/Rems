@@ -47,6 +47,36 @@ sanitize_sql_input <- function(input) {
 flight <-
   function(conn, ems_id, data_file = NULL)
   {
+    # Validate connection
+    if (missing(conn)) {
+      stop("Connection object is required")
+    }
+
+    if (!is.list(conn) || is.null(conn$uri_root)) {
+      stop("Invalid connection object. Please use a proper EMS connection")
+    }
+
+    # Validate ems_id
+    if (missing(ems_id)) {
+      stop("EMS ID is required")
+    }
+
+    if (!is.numeric(ems_id) || ems_id <= 0 || ems_id != round(ems_id)) {
+      stop("EMS ID must be a positive integer")
+    }
+
+    # Validate data_file if provided
+    if (!is.null(data_file)) {
+      if (!is.character(data_file) || length(data_file) != 1) {
+        stop("data_file must be a single character string")
+      }
+
+      if (!file.exists(data_file)) {
+        stop(sprintf("File not found: %s", data_file))
+      }
+    }
+
+    # Create flight object
     obj <- list()
     class(obj) <- "Flight"
     obj$ems_id       <- ems_id
@@ -54,8 +84,15 @@ flight <-
     obj$db_id        <- NULL
     obj$metadata     <- NULL
     obj$trees        <- list(fieldtree= data.frame(), dbtree=data.frame(), kvmaps=data.frame())
-    obj <- load_tree(obj, data_file)
-    obj
+
+    # Load tree data
+    tryCatch({
+      obj <- load_tree(obj, data_file)
+    }, error = function(e) {
+      stop(sprintf("Failed to load tree data: %s", e$message))
+    })
+
+    return(obj)
   }
 
 
