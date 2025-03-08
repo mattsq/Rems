@@ -433,5 +433,10 @@ xdata <- run(tsq, 1901112, start = 0, end = 900)
 ```
 This function will return an R dataframe that contains timepoints from 0 to 900 secs and corresponding values for selected parameters.
 
+## Notes
+
+This version may break old scripts - in particular, if you ever used the shorthand set_database("FDW") to get to Flight Data then you will find that this now points to "FDW Downloads" by default instead of "FDW Flights". To get the old behaviour, you need to make sure to explictly point to "FDW Flightts"
+
+
 
 
