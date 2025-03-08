@@ -219,10 +219,10 @@ set_database.Flight <-
 
     # If the fieldtree is empty, populate it with the root folders for the selected DB
     if (nrow(flt$trees$fieldtree) == 0) {
-      flt <- update_children(flt, get_database.Flight(flt), treetype= "fieldtree")
+      flt <- update_children(flt, get_database(flt), treetype= "fieldtree")
     }
 
-    cat(sprintf("Using database '%s'.\n", get_database.Flight(flt)$name))
+    cat(sprintf("Using database '%s'.\n", get_database(flt)$name))
     flt
   }
 
@@ -235,11 +235,33 @@ set_database_old.Flight <- function(flt, dbname) {
   set_database.Flight(flt, dbname, legacy = TRUE)
 }
 
+#' Get database information
+#'
+#' @description
+#' Generic function to retrieve database information from different objects.
+#'
+#' @param x Object containing database information
+#' @param ... Additional arguments passed to methods
+#'
+#' @return Database information (implementation depends on the class of x)
+#'
+#' @export
+get_database <- function(x, ...) {
+  UseMethod("get_database")
+}
+
+#' @describeIn get_database Get database information from a Flight object
+#'
+#' @param x A Flight object
+#'
+#' @return A list containing database information including id, name, and node type
+#'
+#' @export
 get_database.Flight <-
-  function(flt)
+  function(x, ...)
   {
-    tr <- flt$trees$dbtree
-    return(as.list(tr[tr$nodetype=="database" & tr$id==flt$db_id, ]))
+    tr <- x$trees$dbtree
+    return(as.list(tr[tr$nodetype=="database" & tr$id==x$db_id, ]))
   }
 
 
@@ -487,7 +509,7 @@ update_tree <-
 make_default_tree <-
   function(flt)
   {
-    dbnode <- get_database.Flight(flt)
+    dbnode <- get_database(flt)
     flt <- remove_subtree(flt, dbnode, treetype="fieldtree")
     flt <- add_subtree(flt, dbnode, exclude_tree=exclude_dirs, treetype="fieldtree")
     flt

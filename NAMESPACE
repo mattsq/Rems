@@ -3,6 +3,7 @@
 S3method(async_run,FltQuery)
 S3method(distinct,FltQuery)
 S3method(filter,FltQuery)
+S3method(get_database,Flight)
 S3method(get_database,FltQuery)
 S3method(get_top,FltQuery)
 S3method(group_by,FltQuery)
