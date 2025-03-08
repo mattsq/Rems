@@ -4,6 +4,17 @@ exclude_dirs <- c('Download Information', 'Download Review', 'Processing',
                   'Operational Information', 'Operational Information (ODW2)',
                   'Weather Information', 'Profiles', 'Profile')
 
+sanitize_sql_input <- function(input) {
+  if (is.numeric(input)) {
+    return(input)  # Numeric values don't need escaping
+  } else if (is.character(input)) {
+    # Escape single quotes and other potentially dangerous characters
+    return(gsub("'", "''", input))
+  } else {
+    return(as.character(input))
+  }
+}
+
 flight <-
   function(conn, ems_id, data_file = NULL)
   {
@@ -59,7 +70,11 @@ get_fieldtree <-
       names(dat) <- cols
       return(dat)
     } else {
-      dat <- get_data(flt$metadata, 'fieldtree',sprintf("ems_id = %d and db_id = '%s'", flt$ems_id, flt$db_id))
+      # Sanitize inputs before constructing the query
+      safe_ems_id <- sanitize_sql_input(flt$ems_id)
+      safe_db_id <- sanitize_sql_input(flt$db_id)
+      dat <- get_data(flt$metadata, 'fieldtree',
+                      sprintf("ems_id = %d and db_id = '%s'", safe_ems_id, safe_db_id))
       return(dat)
     }
   }
