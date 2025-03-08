@@ -1,8 +1,43 @@
 
-exclude_dirs <- c('Download Information', 'Download Review', 'Processing',
-                  'Profile 16 Extra Data', 'Flight Review', 'Data Information',
-                  'Operational Information', 'Operational Information (ODW2)',
-                  'Weather Information', 'Profiles', 'Profile')
+#' Default directories to exclude from tree traversal
+#'
+#' @description
+#' These directories are excluded from tree traversal by default,
+#' but can be overridden by setting options.
+#'
+#' @keywords internal
+.default_exclude_dirs <- c(
+  'Download Information', 'Download Review', 'Processing',
+  'Profile 16 Extra Data', 'Flight Review', 'Data Information',
+  'Operational Information', 'Operational Information (ODW2)',
+  'Weather Information', 'Profiles', 'Profile'
+)
+
+#' Get directories to exclude from tree traversal
+#'
+#' @description
+#' Returns the list of directories to exclude from tree traversal.
+#' This can be customized by setting the 'flightems.exclude_dirs' option.
+#'
+#' @return Character vector of directory names to exclude
+#'
+#' @examples
+#' # Get current exclusion list
+#' get_exclude_dirs()
+#'
+#' # Set custom exclusion list
+#' options(flightems.exclude_dirs = c("Profiles", "Weather Information"))
+#' get_exclude_dirs()
+#'
+#' # Reset to defaults
+#' options(flightems.exclude_dirs = NULL)
+#' get_exclude_dirs()
+#'
+#' @export
+get_exclude_dirs <- function() {
+  # Get from options if set, otherwise use defaults
+  getOption("flightems.exclude_dirs", .default_exclude_dirs)
+}
 
 sanitize_sql_input <- function(input) {
   if (is.numeric(input)) {
@@ -512,9 +547,29 @@ update_children <-
   }
 
 
+#' Update a tree in the Flight object
+#'
+#' @description
+#' Updates a specific tree (either fieldtree or dbtree) in the Flight object.
+#'
+#' @param flt A Flight object
+#' @param path Path to the node to update
+#' @param exclude_tree Optional character vector of directories to exclude
+#' @param treetype Type of tree to update ('fieldtree' or 'dbtree')
+#'
+#' @return Updated Flight object
+#'
+#' @export
 update_tree <-
-  function(flt, path, exclude_tree = c(), treetype=c('fieldtree','dbtree'))
+  function(flt, path, exclude_tree = NULL, treetype=c('fieldtree','dbtree'))
   {
+    # Use provided exclude_tree or get from options if NULL and we're in fieldtree mode
+    if (is.null(exclude_tree) && treetype == 'fieldtree') {
+      exclude_tree <- get_exclude_dirs()
+    } else if (is.null(exclude_tree)) {
+      exclude_tree <- c()
+    }
+
     searchtype <- if(treetype=="fieldtree") 'field' else 'database'
 
     path <- tolower(path)
@@ -543,9 +598,26 @@ update_tree <-
   }
 
 
+#' Create the default field tree for a Flight object
+#'
+#' @description
+#' Populates the field tree with default fields, excluding specified directories.
+#'
+#' @param flt A Flight object
+#' @param exclude_dirs Optional character vector of directories to exclude.
+#'                   If NULL, the package default exclusions will be used.
+#'
+#' @return Updated Flight object with populated field tree
+#'
+#' @export
 make_default_tree <-
-  function(flt)
+  function(flt, exclude_dirs = NULL)
   {
+    # Use provided exclude_dirs or get from options
+    if (is.null(exclude_dirs)) {
+      exclude_dirs <- get_exclude_dirs()
+    }
+
     dbnode <- get_database(flt)
     flt <- remove_subtree(flt, dbnode, treetype="fieldtree")
     flt <- add_subtree(flt, dbnode, exclude_tree=exclude_dirs, treetype="fieldtree")
