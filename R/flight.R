@@ -242,6 +242,17 @@ db_request <-
   }
 
 
+#' Request field information from the API
+#'
+#' @description
+#' Requests field information from the API for a given parent node.
+#'
+#' @param flt A Flight object
+#' @param parent A list with field group information
+#'
+#' @return A list containing field and field group information
+#'
+#' @importFrom httr http_error status_code content
 fl_request <-
   function(flt, parent)
   {
@@ -249,34 +260,56 @@ fl_request <-
     if (parent$nodetype=="field_group") {
       body <- list('groupId' = parent$id)
     }
-    r    <- request(flt$connection,
-                    uri_keys = c('database','field_group'),
-                    uri_args = c(flt$ems_id, flt$db_id),
-                    body = body)
-    ##  Get the children fields/field groups
-    d <- httr::content(r)
 
-    d1 <- list()
-    if (length(d$fields) > 0) {
-      d1 <- lapply(d$fields, function(x) list(ems_id    = parent$ems_id,
-                                              db_id     = flt$db_id,
-                                               id        = x$id,
-                                               nodetype  = 'field',
-                                               type      = x$type,
-                                               name      = x$name,
-                                               parent_id = parent$id))
-    }
-    d2 <- list()
-    if (length(d$groups) > 0) {
-      d2 <- lapply(d$groups, function(x) list(ems_id    = parent$ems_id,
-                                              db_id     = flt$db_id,
-                                              id        = x$id,
-                                              nodetype  = 'field_group',
-                                              type      = '',
-                                              name      = x$name,
-                                              parent_id = parent$id))
-    }
-    return(list(d1=d1, d2=d2))
+    # Try to make the API request with error handling
+    tryCatch({
+      r <- request(flt$connection,
+                   uri_keys = c('database','field_group'),
+                   uri_args = c(flt$ems_id, flt$db_id),
+                   body = body)
+
+      # Check for HTTP errors
+      if (httr::http_error(r)) {
+        stop(sprintf(
+          "API request failed [HTTP %d]: %s",
+          httr::status_code(r),
+          httr::content(r, as = "text", encoding = "UTF-8")
+        ))
+      }
+
+      # Parse the response
+      d <- httr::content(r)
+
+      # Validate expected structure
+      if (is.null(d$fields) && is.null(d$groups)) {
+        warning("API response contains neither fields nor groups")
+      }
+
+      d1 <- list()
+      if (length(d$fields) > 0) {
+        d1 <- lapply(d$fields, function(x) list(ems_id    = parent$ems_id,
+                                                db_id     = flt$db_id,
+                                                id        = x$id,
+                                                nodetype  = 'field',
+                                                type      = x$type,
+                                                name      = x$name,
+                                                parent_id = parent$id))
+      }
+      d2 <- list()
+      if (length(d$groups) > 0) {
+        d2 <- lapply(d$groups, function(x) list(ems_id    = parent$ems_id,
+                                                db_id     = flt$db_id,
+                                                id        = x$id,
+                                                nodetype  = 'field_group',
+                                                type      = '',
+                                                name      = x$name,
+                                                parent_id = parent$id))
+      }
+      return(list(d1=d1, d2=d2))
+
+    }, error = function(e) {
+      stop(sprintf("Error in field request for %s: %s", parent$name, e$message))
+    })
   }
 
 
