@@ -464,27 +464,32 @@ search_fields <-
     return(lapply(1:nrow(res), function(i) as.list(res[i,])))
   }
 
-list_allvalues <-
-  function(flt, field = NULL, field_id = NULL, in_vec=FALSE, in_df=FALSE)
+#' Update key-value mappings for a field
+#'
+#' @description
+#' Updates the key-value mappings for a specific field in the flight object,
+#' fetching from the API if necessary.
+#'
+#' @param flt A Flight object
+#' @param field Character string specifying the field name (optional if field_id is provided)
+#' @param field_id Character string specifying the field ID (optional if field is provided)
+#'
+#' @return An updated Flight object with refreshed key-value mappings
+#'
+#' @export
+update_kvmaps_for_field <-
+  function(flt, field = NULL, field_id = NULL)
   {
-
-
-    # There is a very bad design. The updated kvmaps table is stored in the flt object,
-    # but it is never passed to the outside so the global object doesn't update!!!
-    # I'll put reloading kvmaps from localdata as a temp measure (see to_dataframe),
-    # but it may have to be redesigned. Maybe split into two functions,
-    #   flt <-update_kvmaps(flt, ...)
-    #   val <-list_allvalues(flt, ...)
-    if ( is.null(field_id) ) {
+    if (is.null(field_id)) {
       fld <- search_fields(flt, field)[[1]]
       fld_type <- fld$type
-      fld_id   <- fld$id
+      fld_id <- fld$id
       fld_name <- fld$name
-      if ( fld_type != "discrete" )  {
+      if (fld_type != "discrete") {
         stop("Queried field should be discrete type to get the list of possible values.")
       }
     } else {
-      fld_id   <- field_id
+      fld_id <- field_id
       fld_name <- subset(flt$trees$fieldtree, id==fld_id)$name
     }
 
@@ -499,12 +504,50 @@ list_allvalues <-
                    uri_args = c(flt$ems_id, flt$db_id, fld_id))
       km <- httr::content(r)$discreteValues
       kmap <- data.frame(ems_id=flt$ems_id,
-                         id    =fld_id,
-                         key   =as.integer(names(km)),
-                         value =unlist(km, use.names = F), stringsAsFactors=F)
+                         id=fld_id,
+                         key=as.integer(names(km)),
+                         value=unlist(km, use.names = F), stringsAsFactors=F)
       flt$trees$kvmaps <- rbind(flt$trees$kvmaps, kmap)
       save_kvmaps(flt)
     }
+
+    # Return the updated flight object
+    flt
+  }
+
+#' List all values for a discrete field
+#'
+#' @description
+#' Returns all possible values for a discrete field.
+#'
+#' @param flt A Flight object
+#' @param field Character string specifying the field name (optional if field_id is provided)
+#' @param field_id Character string specifying the field ID (optional if field is provided)
+#' @param in_vec Logical, if TRUE returns a named vector
+#' @param in_df Logical, if TRUE returns a data frame with key and value columns
+#'
+#' @return A vector of values, named vector, or data frame depending on parameters
+#'
+#' @export
+list_allvalues <-
+  function(flt, field = NULL, field_id = NULL, in_vec=FALSE, in_df=FALSE)
+  {
+    # First update the kvmaps if needed and get the updated flight object
+    flt <- update_kvmaps_for_field(flt, field, field_id)
+
+    # Now retrieve the field_id (needed if only field name was provided)
+    if (is.null(field_id)) {
+      fld <- search_fields(flt, field)[[1]]
+      fld_id <- fld$id
+    } else {
+      fld_id <- field_id
+    }
+
+    # Get the kvmaps from the updated flight object
+    tr <- flt$trees$kvmaps
+    kmap <- subset(tr, (ems_id==flt$ems_id) & (id==fld_id))
+
+    # Return the values in the requested format
     if (in_vec) {
       aa <- kmap[,'value']
       names(aa) <- kmap[,'key']
@@ -513,8 +556,9 @@ list_allvalues <-
     if (in_df) {
       return(kmap[, c('key','value')])
     }
-    return( kmap$value)
+    return(kmap$value)
   }
+
 #' @importFrom stringdist stringdist
 get_value_id <-
   function(flt, value, field=NULL, field_id=NULL)
