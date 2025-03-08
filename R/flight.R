@@ -164,34 +164,60 @@ save_kvmaps <-
   }
 
 
-set_database_old.Flight <-
-  function(flt, dbname)
-  {
-    tr <- flt$trees$dbtree
-    flt$db_id <- tr[tr$nodetype=="database" & grepl(treat_spchar(dbname), tr$name, ignore.case=T), 'id']
-    flt$trees$fieldtree <- get_fieldtree(flt)
-
-    if (nrow(flt$trees$fieldtree)) {
-      flt <- update_children(flt, get_database.Flight(flt), treetype= "fieldtree")
-    }
-
-    cat(sprintf("Using database '%s'.\n", get_database.Flight(flt)$name))
-    flt
-  }
-
+#' Set the active database for a Flight object
+#'
+#' @description
+#' Sets the active database for a Flight object by name. This function will
+#' match the database name (case-insensitive) and update the flight object
+#' accordingly. If multiple matches are found, it will select the one with
+#' the shortest name.
+#'
+#' @param flt A Flight object
+#' @param dbname Character string with the name of the database
+#' @param legacy Logical, whether to use the legacy behavior (default: FALSE)
+#'
+#' @return An updated Flight object with the selected database
+#'
+#' @examples
+#' \dontrun{
+#' flt <- set_database(flt, "FlightData")
+#' }
+#'
+#' @export
 set_database.Flight <-
-  function(flt, dbname)
+  function(flt, dbname, legacy = FALSE)
   {
     tr <- flt$trees$dbtree
     db_list <- tr[tr$nodetype=="database" & grepl(treat_spchar(dbname), tr$name, ignore.case=T), c('id', 'name')]
-    if (length(db_list)>1) {
-      flt$db_id <- db_list[order(nchar(db_list$name))[1], "id"]
+
+    # Check if we found any matches
+    if (nrow(db_list) == 0) {
+      stop(sprintf("No database found matching '%s'", dbname))
+    }
+
+    # Handle multiple matches
+    if (nrow(db_list) > 1) {
+      if (legacy) {
+        # Legacy behavior just picks the shortest name
+        flt$db_id <- db_list[order(nchar(db_list$name))[1], "id"]
+      } else {
+        # Improved behavior: print matches and let user choose
+        cat("Multiple databases match your query:\n")
+        for (i in 1:nrow(db_list)) {
+          cat(sprintf("%d: %s\n", i, db_list$name[i]))
+        }
+        cat("Using the first match. Specify a more precise name if this is not what you want.\n")
+        flt$db_id <- db_list$id[1]
+      }
     } else {
+      # Single match
       flt$db_id <- db_list$id
     }
+
+    # Get field tree data
     flt$trees$fieldtree <- get_fieldtree(flt)
 
-    # If the fieldtree is empty, populate it wuth the root folders for the selected DB
+    # If the fieldtree is empty, populate it with the root folders for the selected DB
     if (nrow(flt$trees$fieldtree) == 0) {
       flt <- update_children(flt, get_database.Flight(flt), treetype= "fieldtree")
     }
@@ -199,6 +225,15 @@ set_database.Flight <-
     cat(sprintf("Using database '%s'.\n", get_database.Flight(flt)$name))
     flt
   }
+
+# Add a compatibility alias for the old function name
+#' @rdname set_database.Flight
+#' @export
+set_database_old.Flight <- function(flt, dbname) {
+  .Deprecated("set_database.Flight",
+              msg = "set_database_old.Flight is deprecated. Please use set_database.Flight instead.")
+  set_database.Flight(flt, dbname, legacy = TRUE)
+}
 
 get_database.Flight <-
   function(flt)
