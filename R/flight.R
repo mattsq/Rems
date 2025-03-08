@@ -15,6 +15,35 @@ sanitize_sql_input <- function(input) {
   }
 }
 
+#' Create a Flight Object
+#'
+#' @description
+#' Creates a new Flight object that represents a flight record in the EMS system.
+#' This is the main entry point for working with flight data.
+#'
+#' @param conn A connection object to the EMS API or database
+#' @param ems_id Numeric identifier for the EMS record
+#' @param data_file Optional path to a local data file. If NULL, data will be fetched from the connection
+#'
+#' @return A Flight object with the following components:
+#'   \item{ems_id}{The EMS identifier for this system}
+#'   \item{connection}{The connection to the EMS system}
+#'   \item{db_id}{The database identifier (initially NULL)}
+#'   \item{metadata}{Metadata for the flight}
+#'   \item{trees}{List containing fieldtree, dbtree, and kvmaps data frames}
+#'
+#' @examples
+#' \dontrun{
+#' # Create a connection
+#' conn <- connect_to_ems("https://ems-api.example.com", "username", "password")
+#'
+#' # Create a flight object
+#' flt <- flight(conn, 12345)
+#'
+#' # Create a flight object with local data
+#' flt <- flight(conn, 12345, "path/to/local/data.rds")
+#' }
+#'
 flight <-
   function(conn, ems_id, data_file = NULL)
   {
