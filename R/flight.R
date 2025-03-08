@@ -260,7 +260,7 @@ set_database.Flight <-
   function(flt, dbname, legacy = FALSE)
   {
     tr <- flt$trees$dbtree
-    db_list <- tr[tr$nodetype=="database" & grepl(treat_spchar(dbname), tr$name, ignore.case=T), c('id', 'name')]
+    db_list <- tr[tr$nodetype=="database" & grepl(escape_pattern(dbname), tr$name, ignore.case=T), c('id', 'name')]
 
     # Check if we found any matches
     if (nrow(db_list) == 0) {
@@ -574,7 +574,7 @@ update_tree <-
 
     path <- tolower(path)
     for ( i in seq_along(tolower(path)) ) {
-      p <- treat_spchar(path[i])
+      p <- escape_pattern(path[i])
       if (i == 1) {
         tr <- flt$trees[[treetype]]
         parent <- tr[grepl(p, tr$name, ignore.case = T), ]
@@ -633,12 +633,12 @@ search_fields <-
       if ( length(f) == 1 ) {
         # Single keyword case
         tr <- flt$trees$fieldtree
-        fres <- subset(tr, (nodetype=="field") & grepl(treat_spchar(f), name, ignore.case = T))
+        fres <- subset(tr, (nodetype=="field") & grepl(escape_pattern(f), name, ignore.case = T))
       } else if ( length(f) > 1 ) {
         # Vector of hierarchical keyword set
         chld <- flt$trees$fieldtree
         for ( i in seq_along(f) ) {
-          ff <- treat_spchar(f[i])
+          ff <- escape_pattern(f[i])
           if (i < length(f)) {
             chld      <- chld[chld$nodetype == "field_group", ]
             parent_id <- subset(chld, grepl(ff, name, ignore.case = T))$id
@@ -789,16 +789,33 @@ get_shortest <-
   }
 
 
-treat_spchar <-
-  function(p)
-  {
-    sp_chr <- c("\\.", "\\^", "\\(", "\\)", "\\[", "\\]", "\\{", "\\}", "<", ">",
-                "\\-", "\\+", "\\?", "\\!", "\\*", "\\$", "\\|", "\\&", "\\%")
-    for (x in sp_chr) {
-      p <- gsub(x, paste("\\\\Q",x,"\\\\E",sep=""), p)
-    }
-    p
+#' Escape special characters in a string for regular expression matching
+#'
+#' @description
+#' Escapes special characters in a string to allow safe use in regular expressions.
+#' This is a more robust replacement for the custom treat_spchar function.
+#'
+#' @param pattern Character string to escape
+#'
+#' @return Character string with special characters escaped
+#'
+#' @importFrom utils glob2rx
+#' @examples
+#' escape_pattern("file.txt")  # escapes the dot
+#' escape_pattern("data[2020]") # escapes the brackets
+#'
+#' @export
+escape_pattern <- function(pattern) {
+  if (!is.character(pattern)) {
+    stop("Pattern must be a character string")
   }
+
+  # First convert to a fixed pattern (escapes all special regex chars)
+  escaped <- gsub("([.|()\\^{}+?*$])", "\\\\\\1", pattern)
+
+  # Return the escaped pattern
+  return(escaped)
+}
 
 
 lls_to_df <-
